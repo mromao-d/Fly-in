@@ -4,6 +4,21 @@ import re
 # from typing import Optional
 
 
+class ConnectionNodes:
+    def __init__(
+        self,
+        path: str
+    ):
+        self.path = path
+        self.start = None
+        self.end = None
+        self.split_path()
+
+    def split_path(self):
+        self.start = self.path.split('-')[0]
+        self.end = self.path.split('-')[1]
+
+
 class HubType(Enum):
     start_hub = 'start_hub'
     end_hub = 'end_hub'
@@ -18,13 +33,13 @@ class ZoneType(Enum):
     priority = 'priority'
 
 
-# class GarphNodes(ABC):
 class GarphNodes:
     def __init__(
         self,
         hub_type: HubType,
         hub_name: str,
         coord: tuple[int, int],
+        conn_nodes: ConnectionNodes = None,
         zone: ZoneType = ZoneType.normal,
         confs: list[str] = None,
         max_drones: int = 1
@@ -35,79 +50,10 @@ class GarphNodes:
         self.zone = zone
         self.confs = confs
         self.max_drones = max_drones
-
-    # @abstractmethod
-    # def validate_node(self):
-    #     pass
+        self.conn_nodes = conn_nodes
 
     def print_node(self):
         print(f"location is {self.hub_type.name} and name is {self.hub_name}")
-
-
-# class CreateStartHub(GarphNodes):
-#     def __init__(
-#         self,
-#         hub_name: str,
-#         coord: tuple[int, int],
-#         hub_type: HubType = HubType,
-#         zone: ZoneType = ZoneType.normal,
-#         confs: list[str] = None,
-#         max_drones: int = 1
-#     ):
-#         super.__init__(
-#             hub_type = hub_type,
-#             hub_name = hub_name,
-#             coord = coord,
-#             zone = zone,
-#             confs = confs,
-#             max_drones = max_drones,
-#         )
-
-
-# class CreateHub(GarphNodes):
-#     def __init__(
-#         self,
-#         hub_name: str,
-#         coord: tuple[int, int],
-#         hub_type: HubType = HubType,
-#         zone: ZoneType = ZoneType.normal,
-#         confs: list[str] = None,
-#         max_drones: int = 1
-#     ):
-#         super.__init__(
-#             hub_type = hub_type,
-#             hub_name = hub_name,
-#             coord = coord,
-#             zone = zone,
-#             confs = confs,
-#             max_drones = max_drones,
-#         )
-
-
-# class CreateEndHub(GarphNodes):
-#     def __init__(
-#         self,
-#         hub_name: str,
-#         coord: tuple[int, int],
-#         hub_type: HubType = HubType,
-#         confs: list[str] = None,
-#     ):
-#         super.__init__(
-#             hub_type = hub_type,
-#             hub_name = hub_name,
-#             coord = coord,
-#             zone = zone,
-#             confs = confs,
-#             max_drones = max_drones,
-#         )
-
-
-class ConnectionNodes:
-    def __init__(
-        self,
-        path: str
-    ):
-        self.path = path
 
 
 class ReadConfs:
@@ -145,13 +91,11 @@ class ReadConfs:
                     try:
                         hub = HubType(line.split(":")[0])
                         confs = re.search(r"\[(.*?)\]", line)
-                        # print(confs)
                         name = line.split(" ")[1].strip('\n')
 
                         if hub == HubType.connection:
                             node = ConnectionNodes(path=name)
                             self.connection.append(node)
-                            # print("created connection node")
                         else:
                             node = GarphNodes(
                                 hub_type=hub,
