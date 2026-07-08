@@ -23,11 +23,11 @@ class HubNodes:
         hub_name: str,
         coord: tuple[int, int],
         drones: int,
+        max_drones: int,
         conn_nodes: list["HubNodes"] | None = None,
         b_conn_nodes: list["HubNodes"] | None = None,
         zone: ZoneType = ZoneType.normal,
         confs: list[str] = None,
-        max_drones: int = 1,
         level: int = -1
     ):
         """
@@ -55,14 +55,22 @@ class HubNodes:
         self.color = "green"
         self.extract_confs()
 
-    def print_node(self):
-        print(f"location is {self.hub_type.name} and name is {self.hub_name} and coords are {self.coord}")
+    def print_node(self) -> None:
+        print(
+            f"location is {self.hub_type.name} and "
+            f"name is {self.hub_name} and coords are {self.coord}"
+        )
+        return None
 
-    def extract_confs(self):
+    def extract_confs(self) -> None:
         for conf in self.confs.split(' '):
             if "color" in conf.lower():
                 self.color = conf.split('=')[1].lower()
-            if "max_drones" in conf.lower():
-                self.max_drones = conf.split('=')[1]
+            if (
+                "max_drones" in conf.lower()
+                and self.hub_type.name not in ('start_hub', 'end_hub')
+            ):
+                self.max_drones = int(conf.split('=')[1])
             if "zone" in conf.lower():
                 self.zone = ZoneType[conf.split('=')[1].lower()]
+        return None

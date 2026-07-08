@@ -1,23 +1,6 @@
 import re
 from hubs import HubType, HubNodes
-
-
-class ConnectionNodes:
-    def __init__(
-        self,
-        path: str
-    ):
-        self.path = path
-        self.start = None
-        self.end = None
-        self.split_path()
-
-    def split_path(self):
-        conn = self.path.split('-')
-        if self.path is None or len(conn) != 2:
-            raise ValueError("Connection must have exactly one '-'")
-        self.start = conn[0]
-        self.end = conn[1]
+from connection_nodes import ConnectionNodes
 
 
 class ReadConfs:
@@ -70,15 +53,20 @@ class ReadConfs:
                             int(line.split()[2]), int(line.split()[3])
                         )
                         drones = self.nb_drones if (
-                            self.nb_drones and hub == HubType.start_hub
+                            self.nb_drones and hub in [HubType.start_hub]
                         ) else 0
+                        max_drones = self.nb_drones if (
+                            self.nb_drones
+                            and hub in [HubType.start_hub, HubType.end_hub]
+                        ) else 1
 
                         node = HubNodes(
                             hub_type=hub,
                             hub_name=name,
                             coord=coords,
                             confs=confs,
-                            drones=drones
+                            drones=drones,
+                            max_drones=max_drones
                             )
                         self.hubs.append(
                             node

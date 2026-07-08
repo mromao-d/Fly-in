@@ -125,6 +125,14 @@ class RenderMap:
                     screen
                 )
 
+                self.render_txt(
+                    font,
+                    f"max_drones: {str(hub.max_drones)}",
+                    (0, 0, 0),
+                    (hub_x, hub_y - 40),
+                    screen
+                )
+
                 text = font.render(str(hub.drones), True, (0, 0, 0))
                 text_rect = text.get_rect(center=(hub_x, hub_y))
 
