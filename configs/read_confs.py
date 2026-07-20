@@ -35,7 +35,7 @@ class ReadConfs:
             while (line):
                 if "nb_drones" in line:
                     self.nb_drones = int(line.split("nb_drones: ")[-1])
-                    print(f"nb drones is {self.nb_drones}")
+                    # print(f"nb drones is {self.nb_drones}")
                 try:
                     hub = HubType(line.split(":")[0])
                     confs = re.search(r"\[(.*?)\]", line)
@@ -47,14 +47,9 @@ class ReadConfs:
                         node = ConnectionNodes(path=name)
                         self.all_connections.append(node)
                     else:
-                        # if ~self.nb_drones:
-                        #     raise ValueError("Drone number is missing")
                         coords = (
                             int(line.split()[2]), int(line.split()[3])
                         )
-                        drones = self.nb_drones if (
-                            self.nb_drones and hub in [HubType.start_hub]
-                        ) else 0
                         max_drones = self.nb_drones if (
                             self.nb_drones
                             and hub in [HubType.start_hub, HubType.end_hub]
@@ -65,7 +60,6 @@ class ReadConfs:
                             hub_name=name,
                             coord=coords,
                             confs=confs,
-                            drones=drones,
                             max_drones=max_drones
                             )
                         self.hubs.append(

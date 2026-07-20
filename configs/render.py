@@ -1,6 +1,7 @@
 import pygame
 import math
 from typing import Any
+from algo import Algo
 
 
 class RenderMap:
@@ -63,10 +64,12 @@ class RenderMap:
 
         pygame.init()
         WIDTH, HEIGHT = 800, 600
-        radius = 20
+        radius = 40
         screen = pygame.display.set_mode((WIDTH, HEIGHT))
         font = pygame.font.SysFont(None, 15)
         running = True
+        di = Algo(self.confs)
+        paths = di.all_paths
         while running:
             WIDTH, HEIGHT = screen.get_size()
             running = self.handle_events()
@@ -105,40 +108,50 @@ class RenderMap:
                     font,
                     hub.hub_name,
                     (0, 0, 0),
-                    (hub_x, hub_y + 10),
+                    (hub_x, hub_y),
                     screen
                 )
 
-                self.render_txt(
-                    font,
-                    f"{hub.zone.name}: {str(hub.zone.value)}",
-                    (0, 0, 0),
-                    (hub_x, hub_y + 25),
-                    screen
-                )
+                arest = 20
+                for i, drone in enumerate(hub.drones):
+                    coords = (hub_x + 1.5 * i, hub_y + 1.5 * i)
+                    pygame.draw.rect(screen, "grey", (coords[0], coords[1], arest, arest))
+                    # print(f"D{hub.id}")
+                    text = font.render(f"D{drone.id}", True, "black")
+                    text_rect = text.get_rect(center=(coords[0] + arest / 2, coords[1] + arest / 2))
+                    screen.blit(text, text_rect)
 
-                self.render_txt(
-                    font,
-                    f"level: {str(hub.level)}",
-                    (0, 0, 0),
-                    (hub_x, hub_y - 25),
-                    screen
-                )
+                # self.render_txt(
+                #     font,
+                #     f"{hub.zone.name}: {str(hub.zone.value)}",
+                #     (0, 0, 0),
+                #     (hub_x, hub_y + 25),
+                #     screen
+                # )
 
-                self.render_txt(
-                    font,
-                    f"max_drones: {str(hub.max_drones)}",
-                    (0, 0, 0),
-                    (hub_x, hub_y - 40),
-                    screen
-                )
+                # self.render_txt(
+                #     font,
+                #     f"level: {str(hub.level)}",
+                #     (0, 0, 0),
+                #     (hub_x, hub_y - 25),
+                #     screen
+                # )
 
-                text = font.render(str(hub.drones), True, (0, 0, 0))
-                text_rect = text.get_rect(center=(hub_x, hub_y))
+                # self.render_txt(
+                #     font,
+                #     f"max_drones: {str(hub.max_drones)}",
+                #     (0, 0, 0),
+                #     (hub_x, hub_y - 40),
+                #     screen
+                # )
 
-                screen.blit(text, text_rect)
+                # text = font.render(str(hub.drones), True, (0, 0, 0))
+                # text_rect = text.get_rect(center=(hub_x, hub_y))
+
+                # screen.blit(text, text_rect)
 
             pygame.display.flip()
+            di.walk()
             # running = False
 
         pygame.quit()

@@ -1,4 +1,5 @@
 from enum import Enum
+# from connection_nodes import ConnectionNodes
 
 
 class HubType(Enum):
@@ -12,7 +13,7 @@ class ZoneType(Enum):
     normal = 1
     blocked = -1
     restricted = 2
-    priority = 0
+    priority = 1
 
 
 # need to validate if there is start and end
@@ -22,7 +23,6 @@ class HubNodes:
         hub_type: HubType,
         hub_name: str,
         coord: tuple[int, int],
-        drones: int,
         max_drones: int,
         conn_nodes: list["HubNodes"] | None = None,
         b_conn_nodes: list["HubNodes"] | None = None,
@@ -41,13 +41,14 @@ class HubNodes:
             confs: list[str] = list of confs between '[]'
             max_drones: int = max drones allowed at the same time
         """
+        self.id = id
         self.hub_type = hub_type
         self.hub_name = hub_name
         self.coord = coord
         self.zone = zone
         self.confs = confs
         self.max_drones = max_drones
-        self.drones = drones
+        self.drones = []
         self.level = level
         self.conn_nodes = [] if conn_nodes is None else conn_nodes
         self.b_conn_nodes = [] if b_conn_nodes is None else b_conn_nodes
