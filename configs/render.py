@@ -69,7 +69,7 @@ class RenderMap:
         font = pygame.font.SysFont(None, 15)
         running = True
         di = Algo(self.confs)
-        paths = di.all_paths
+        # paths = di.all_paths
         while running:
             WIDTH, HEIGHT = screen.get_size()
             running = self.handle_events()
@@ -113,10 +113,10 @@ class RenderMap:
                 )
 
                 arest = 20
+                plus_size = 4
                 for i, drone in enumerate(hub.drones):
-                    coords = (hub_x + 1.5 * i, hub_y + 1.5 * i)
+                    coords = (hub_x + plus_size * i, hub_y + plus_size * i)
                     pygame.draw.rect(screen, "grey", (coords[0], coords[1], arest, arest))
-                    # print(f"D{hub.id}")
                     text = font.render(f"D{drone.id}", True, "black")
                     text_rect = text.get_rect(center=(coords[0] + arest / 2, coords[1] + arest / 2))
                     screen.blit(text, text_rect)
@@ -137,21 +137,33 @@ class RenderMap:
                 #     screen
                 # )
 
-                # self.render_txt(
-                #     font,
-                #     f"max_drones: {str(hub.max_drones)}",
-                #     (0, 0, 0),
-                #     (hub_x, hub_y - 40),
-                #     screen
-                # )
+                self.render_txt(
+                    font,
+                    f"max_drones: {str(hub.max_drones)}",
+                    (0, 0, 0),
+                    (hub_x, hub_y - 40),
+                    screen
+                )
 
                 # text = font.render(str(hub.drones), True, (0, 0, 0))
                 # text_rect = text.get_rect(center=(hub_x, hub_y))
 
                 # screen.blit(text, text_rect)
 
+            for conn in self.confs.all_connections:
+                conn_x = (conn.coord[0] + 1) * (WIDTH / (self.grid_size[0] + 2))
+                conn_y = (conn.coord[1] + 1) * (HEIGHT / (self.grid_size[1] + 2))
+                for i, drone in enumerate(conn.drones):
+                    coords = (conn_x + plus_size * i, conn_y + plus_size * i)
+                    pygame.draw.rect(screen, "grey", (coords[0], coords[1], arest, arest))
+                    text = font.render(f"D{drone.id}", True, "black")
+                    text_rect = text.get_rect(center=(coords[0] + arest / 2, coords[1] + arest / 2))
+                    screen.blit(text, text_rect)
+
             pygame.display.flip()
             di.walk()
+            # di.walk_one()
+            di.hubs_w_drones = di.f_hubs_w_drones()
             # running = False
 
         pygame.quit()

@@ -25,10 +25,9 @@ class HubNodes:
         coord: tuple[int, int],
         max_drones: int,
         conn_nodes: list["HubNodes"] | None = None,
-        b_conn_nodes: list["HubNodes"] | None = None,
         zone: ZoneType = ZoneType.normal,
         confs: list[str] = None,
-        level: int = -1
+        # level: int = -1
     ):
         """
         inits each node of the graph (treated as Hub)
@@ -49,12 +48,13 @@ class HubNodes:
         self.confs = confs
         self.max_drones = max_drones
         self.drones = []
-        self.level = level
+        # self.level = level
         self.conn_nodes = [] if conn_nodes is None else conn_nodes
-        self.b_conn_nodes = [] if b_conn_nodes is None else b_conn_nodes
+        self.connections = []
         self.grid_size = tuple[int, int]
         self.color = "green"
         self.extract_confs()
+        self.map_drones()
 
     def print_node(self) -> None:
         print(
@@ -75,3 +75,17 @@ class HubNodes:
             if "zone" in conf.lower():
                 self.zone = ZoneType[conf.split('=')[1].lower()]
         return None
+
+    def map_drones(self) -> None:
+        from drones import Drones
+        if self.hub_type == HubType.start_hub:
+            for i in range(self.max_drones):
+                self.drones.append(
+                    Drones(
+                        id=i + 1,
+                        hub=self
+                    )
+                )
+
+    # def map_connections(self) -> None:
+    #     for conn in self.confs.

@@ -1,7 +1,8 @@
 from read_confs import ReadConfs
 from hubs import HubNodes, ZoneType, HubType
-from drones import Drones
 from paths import Paths
+from drones import Drones
+from connection_nodes import ConnectionNodes
 
 
 class Algo:
@@ -19,13 +20,11 @@ class Algo:
         self.confs = confs
         self.finish = False
         self.graph = {}
-        # self.paths: list[HubNodes] = []
-        self.map_drones()
         self.BFS()
         self.hub_validations()
-        # self.DFS()
         self.build_graph()
-        # self.walk()
+        self.hubs_w_drones = self.f_hubs_w_drones()
+        self.sorted_paths = self.ordered_paths()
 
     def find_start(self) -> HubNodes | None:
         start = next(
@@ -46,20 +45,6 @@ class Algo:
             None
         )
         return end
-
-    def map_drones(self):
-        total = sum([len(el.drones) for el in self.confs.hubs])
-        if total == 0:
-            start_node = self.find_start()
-            for i in range(self.confs.nb_drones):
-                start_node.drones.append(
-                    Drones(
-                        id=i + 1,
-                        hub=start_node
-                    )
-                )
-                # print(f"mapping for D{i}")
-        # print(f"total is {total}")
 
     def BFS(self) -> None:
         start = self.find_start()
@@ -86,42 +71,6 @@ class Algo:
 
         return None
 
-    # def DFS(self) -> None:
-    #     start = self.find_start()
-    #     if start is None:
-    #         return None
-    #     path = [start]
-    #     visited = set()
-    #     visited.add(start)
-    #     end = False
-    #     while path and end is False:
-    #         hub = path[-1]
-    #         if len(hub.conn_nodes) == 0:
-    #             path.pop()
-    #         elif all(x in visited for x in hub.conn_nodes):
-    #             path.pop()
-    #         else:
-    #             for adj in sorted(hub.conn_nodes, key=lambda x: x.zone.value):
-    #                 if (adj in visited or adj.zone.name == 'blocked'):
-    #                     continue
-
-    #                 # elif adj.level >= hub.level:
-
-    #                 elif adj.hub_type.value == 'end_hub':
-    #                     path.append(adj)
-    #                     end = True
-    #                     break
-
-    #                 else:
-    #                     path.append(adj)
-    #                     visited.add(adj)
-    #                     break
-
-    #     # bottle = min([hub.max_drones for hub in path])
-    #     # sorted_path = sorted(path, key = lambda x: x.zone.value)
-    #     # print(f"path is {[(hub.hub_name, hub.zone.value) for hub in path]} for {str(bottle)} drones")
-    #     return None
-
     def build_graph(self) -> None:
         for node in self.confs.hubs:
             self.graph[node] = node.conn_nodes
@@ -133,6 +82,7 @@ class Algo:
         for i, node in enumerate(path):
             priority = any(
                 adj.zone == ZoneType.priority for adj in node.conn_nodes
+                if len(adj.drones) < adj.max_drones
             )
 
             if (
@@ -144,14 +94,36 @@ class Algo:
 
         return True
 
+    @staticmethod
+    def is_restricted(path):
+        for i, node in enumerate(path):
+            restricted = any(
+                adj.zone == ZoneType.restricted for adj in node.conn_nodes
+                if len(adj.drones) < adj.max_drones
+            )
+
+            if (
+                restricted
+                and (i + 1) < len(path)
+                and path[i + 1].zone != ZoneType.restricted
+            ):
+                return False
+
+        return True
+
     def find_all_paths(self, hub: HubNodes) -> None:
-        def find_path(node, end, visited=None):
+        def find_path(node, start, end, visited=None):
             if visited is None:
                 visited = set()
 
-            if node in visited or (
-                len(node.drones) == node.max_drones
-                and node.hub_type not in (HubType.start_hub, HubType.end_hub)
+            if (
+                node in visited
+                or len(start.drones) == 0
+                or (
+                    (len(node.drones) == node.max_drones and node != hub)
+                    and node.hub_type not in (
+                        HubType.start_hub, HubType.end_hub
+                    ))
             ):
                 return []
 
@@ -161,21 +133,21 @@ class Algo:
                 return [[node]]
 
             paths = []
-
+            # print(f"graph is {[_.hub_name for _ in self.graph]}")
             for adj_node in self.graph.get(node, []):
-                for path in find_path(adj_node, end, visited):
+                for path in find_path(adj_node, start, end, visited):
                     paths.append([node] + path)
 
             return paths
 
         start = hub
         end = self.find_end()
-        paths = find_path(start, end)
+        paths = find_path(start, start, end)
         for p in paths:
-            self.all_paths.append(Paths(
-                path=p,
-                priority=self.is_priority(p)
-                # priority=False
+            self.all_paths.add(Paths(
+                hubs=p,
+                priority=self.is_priority(p),
+                restricted=self.is_restricted(p)
             ))
         return None
 
@@ -191,68 +163,226 @@ class Algo:
 
         return None
 
-    def ordered_paths(self, hubs_w_drones: list[HubNodes]) -> list[Paths]:
+    def ordered_paths(self) -> list[Paths]:
 
-        for hub in hubs_w_drones:
-            self.find_all_paths(hub)
+        self.all_paths = set()
+        self.find_all_paths(self.find_start())
 
-        # print("here 2")
-        # print(f"all paths are {self.all_paths}")
-        priority_paths = [p for p in self.all_paths if p.priority]
-        # priority_paths = [hub.hub_name for hub in [path for path in paths]]
-        # print()
+        sorted_paths = sorted(self.all_paths, key=lambda x: x.cost)
+        sorted_paths = sorted(
+            sorted_paths, key=lambda x: x.priority, reverse=True
+        )
 
-        # print(f"priority_paths are {priority_paths}")
-        # print(f"priority_paths 2 are {[[hub.hub_name for hub in el.path] for el in priority_paths]} with cost {[el.cost for el in priority_paths]}")
-        # print()
-
-        sorted_paths = sorted(priority_paths, key=lambda x: x.cost)
-        # print(f"sorted_paths are {sorted_paths}")
-        # print(f"sorted_paths 2 are {[[hub.hub_name for hub in el.path] for el in sorted_paths]} with cost {[el.cost for el in sorted_paths]}")
         return sorted_paths
-        # print(f"priority_paths 2 are {[[hub.hub_name for hub in el] for el in priority_paths]}")
-        # priority_paths = sorted(priority_paths, key=lambda x: x.cost)
-        # print(priority_paths)
-        # print([_.hub_name for _ in hubs_w_drones])
-        # print([_.path for _ in paths])
-        # # for hub in self.confs.hubs:
-        # #     if len(hub.drones) > 0:
-        # #         print(f"hub {hub.hub_name} has {len(hub.drones)} drones")
-        # # for _ in self.paths:
-        # #     print(_)
-        # # print(self.paths)
-        # # print(f"{self.paths} are self.paths")
-        # priority_paths = [el for el in self.paths if el.priority is True]
-        # print(f"priority_paths are {priority_paths}")
-        # # print()
-        # for _ in priority_paths:
-        #     for hub in _.path:
-        #         print(hub.hub_name)
-        # print([[hub.hub_name for hub in path.path] for path in priority_paths])
-        # print("end")
-        # # # print(_.path for _ in priority_paths])
 
-    def walk(self):
-        import time
-        time.sleep(2)
-        self.all_paths = []
+    def f_hubs_w_drones(self) -> None:
+        for hub in self.confs.hubs:
+            for drone in hub.drones:
+                drone.moved = False
         hubs_w_drones = filter(lambda x: len(x.drones) > 0, self.confs.hubs)
         hubs_w_drones = [
             hub for hub in list(hubs_w_drones)
             if hub.hub_type != HubType.end_hub
         ]
-        # print(f"hubs_w_drones are {len(hubs_w_drones)} {[_.drones for _ in hubs_w_drones]}")
+        return hubs_w_drones
+
+    # def connections_w_drones(self) -> list[ConnectionNodes]:
+    #     for conn in self.confs.all_connections:
+    #         conn.pass_drones = len(conn.drones)
+    #     connections = [
+    #         _ for _ in self.confs.all_connections if len(_.drones) > 0
+    #     ]
+
+    #     return connections
+
+    def move_drones_hubs(
+            self,
+            drone: Drones,
+            hubs: list[HubNodes],
+            next: bool
+    ) -> tuple[bool, list[str]]:
+        log = []
+        for idx_h, hub in enumerate(hubs):
+
+            try:
+                idx_d = hub.drones.index(drone)
+            except ValueError:
+                continue
+
+            if (
+                next is False
+                or len(hubs[idx_h + 1].drones) == hubs[idx_h + 1].max_drones
+            ):
+                continue
+
+            if (
+                drone in hub.drones
+                and drone.moved is False
+            ):
+                conn = [
+                    _ for _ in self.confs.all_connections
+                    if (
+                        _.start == hubs[idx_h].hub_name
+                        and _.end == hubs[idx_h + 1].hub_name
+                    )
+                ][0]
+                # if conn.path == 'fast_path-merge_point':
+                #     print(f"conn pass drones is {conn.pass_drones} and max capacity is {conn.max_drones}")
+
+                if conn.pass_drones == conn.max_drones:
+                    continue
+
+                if hubs[idx_h + 1].hub_type == HubType.end_hub:
+                    drone.finished = True
+
+                if (
+                    hubs[idx_h + 1].zone == ZoneType.restricted
+                    and conn.pass_drones < conn.max_drones
+                ):
+                    log.append(
+                            f"D{drone.id}-{conn.path}"
+                        )
+                    conn.drones.append(drone)
+                    hubs[idx_h].drones.pop(idx_d)
+                    drone.conn = conn
+                    drone.conn_wait += 2
+                    drone.conn_turns += 2
+                else:
+                    hubs[idx_h + 1].drones.append(drone)
+                    log.append(
+                            f"D{drone.id}-"
+                            f"{hubs[idx_h + 1].hub_name}"
+                        )
+                    hubs[idx_h].drones.pop(idx_d)
+                    drone.conn_turns += 1
+
+                conn.pass_drones += 1
+                drone.moved = True
+                next = False
+
+                break
+        return next, log
+
+    def move_drones_conns(
+            self,
+            drone: Drones
+    ) -> list[str]:
+        log = []
+        # print("-----------------")
+
+        conn = drone.conn
+        # print(f"move_drones_conns: connection {conn.path} has drone D{drone.id}")
+        hub_end = [
+            _ for _ in self.confs.hubs if _.hub_name == drone.conn.end
+        ]
+        # print(f"hubs: {[_.hub_name for _ in hub_end]}")
+
+        hub_end = hub_end[0]
+        if len(hub_end.drones) == hub_end.max_drones:
+            raise ("shit in max drones. Need another protection")
+        hub_end.drones.append(drone)
+        conn.drones.pop(conn.drones.index(drone))
+        conn.pass_drones = len(conn.drones)
+        drone.conn = None
         # print()
-        # print(f"hubs_w_drones are {hubs_w_drones}")
-        paths = self.ordered_paths(hubs_w_drones)
-        while True:
-            if len(paths) == 0:
-                print("no more movements")
-                break
-            if sum(len(_.drones) for _ in hubs_w_drones) == 0:
-                print("no more drones")
-                break
-            print(f"path is {[hub.hub_name for hub in paths[0].path]}")
-            paths[0].path[1].drones.append(paths[0].path[0].drones[0])
-            paths[0].path[0].drones.pop()
-            break
+        return log
+
+    def walk_one(
+            self,
+            drones: list[Drones],
+            type: str = 'hub'
+    ) -> list[str]:
+
+        log = []
+        paths = self.sorted_paths
+
+        for drone in drones:
+            if type == 'connection':
+                # pass
+                log.extend(self.move_drones_conns(drone))
+            else:
+                next = True
+                for path in paths:
+                    # if next is False:
+                    #     break
+
+                    if len(drones) == 0:
+                        break
+
+                    # validate drones in hubs
+                    if type == 'hub':
+                        next, this_log = self.move_drones_hubs(
+                            drone, path.hubs, next
+                        )
+                    log.extend(this_log)
+
+        return log
+
+    def find_drones_h(self) -> list[Drones]:
+        drones = []
+        for hub in self.confs.hubs:
+            for drone in hub.drones:
+                drone.moved = False
+                drones.append(drone)
+
+        drones = [
+            drone for drone in sorted(drones, key=lambda x: x.id)
+            if drone.finished is False
+        ]
+        return drones
+
+    def find_drones_c(self) -> list[Drones]:
+        drones = []
+        for conn in self.confs.all_connections:
+            conn.pass_drones = len([
+                _ for _ in conn.drones
+                if _.conn_wait == 2
+            ])
+            for drone in conn.drones:
+                drone.moved = False
+                drone.conn_wait -= 1
+                drones.append(drone)
+
+        drones = [
+            drone for drone in sorted(drones, key=lambda x: x.id)
+            if drone.finished is False and drone.conn_wait == 0
+        ]
+        return drones
+
+    def find_after_conn(self) -> list[Drones]:
+        drones = []
+        for conn in self.confs.all_connections:
+            for drone in conn.drones:
+                drone.moved = False
+                if drone.conn_wait < 0:
+                    raise "Shit happened here"
+
+                hubs = list(
+                    filter(lambda x: x.hub_name == conn.end, self.confs.hubs)
+                )
+                drones.extend([_.drones for _ in hubs])
+
+        return drones
+
+    def walk(self) -> None:
+        import time
+        time.sleep(4)
+        log = []
+
+        drones_after_conns = self.find_after_conn()
+        if len(drones_after_conns) != 0:
+            log.extend(self.walk_one(drones_after_conns))
+
+        drones_conns = self.find_drones_c()
+        if len(drones_conns) != 0:
+            self.walk_one(drones_conns, type='connection')
+
+        drones_hubs = self.find_drones_h()
+        drones_hubs = list(
+            filter(lambda x: x not in drones_conns, drones_hubs)
+        )
+        if len(drones_hubs) != 0:
+            log.extend(self.walk_one(drones_hubs))
+        if len(log):
+            print(" ".join(log))
+        return None

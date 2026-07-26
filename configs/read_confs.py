@@ -17,7 +17,9 @@ class ReadConfs:
         self.normalize_coords()
         self.map_coords()
         self.map_hub_conns()
-        self.map_b_hub_conns()
+        self.map_conn_coords()
+        # self.map_connections()
+        # self.map_b_hub_conns()
 
     def file_exists(self) -> None:
         try:
@@ -44,8 +46,11 @@ class ReadConfs:
                     name = line.split(" ")[1].strip('\n')
 
                     if hub == HubType.connection:
-                        node = ConnectionNodes(path=name)
-                        self.all_connections.append(node)
+                        connection = ConnectionNodes(
+                            path=name,
+                            confs=confs
+                        )
+                        self.all_connections.append(connection)
                     else:
                         coords = (
                             int(line.split()[2]), int(line.split()[3])
@@ -113,7 +118,10 @@ class ReadConfs:
             f_hubs = []
             connections = [
                 conn.end for conn in self.all_connections
-                if conn.start == hub.hub_name
+                if (
+                    conn.start == hub.hub_name
+                    # and conn.max_link_capacity > 0
+                )
             ]
 
             f_hubs = [
@@ -123,20 +131,48 @@ class ReadConfs:
 
             hub.conn_nodes.extend(f_hubs)
 
-    def map_b_hub_conns(self):
-        """
-        Maps the forward hubs for each hub
-        """
-        for hub in self.hubs:
-            f_hubs = []
-            connections = [
-                conn.start for conn in self.all_connections
-                if conn.end == hub.hub_name
+            conns = [
+                conn for conn in self.all_connections
+                if conn.start == hub.hub_name
             ]
 
-            f_hubs = [
-                front_hub for front_hub in self.hubs
-                if front_hub.hub_name in connections
-            ]
+            hub.connections.extend(conns)
 
-            hub.b_conn_nodes.extend(f_hubs)
+    def map_conn_coords(self) -> None:
+        for conn in self.all_connections:
+            start_node = [_ for _ in self.hubs if _.hub_name == conn.start][0]
+            # print(f"start_node is {start_node}")
+            end_node = [_ for _ in self.hubs if _.hub_name == conn.end][0]
+            # print(f"end_node is {end_node}")
+
+            conn.coord = (
+                abs(start_node.coord[0] - end_node.coord[0]) / 2,
+                abs(start_node.coord[1] - end_node.coord[1]) / 2
+            )
+
+        return None
+
+    # def map_connections(self):
+    #     """
+    #     Maps the forward hubs for each hub
+    #     """
+
+    #     print(f"conns are {[conn.path for conn in conns]}")
+
+    # def map_b_hub_conns(self):
+    #     """
+    #     Maps the forward hubs for each hub
+    #     """
+    #     for hub in self.hubs:
+    #         f_hubs = []
+    #         connections = [
+    #             conn.start for conn in self.all_connections
+    #             if conn.end == hub.hub_name
+    #         ]
+
+    #         f_hubs = [
+    #             front_hub for front_hub in self.hubs
+    #             if front_hub.hub_name in connections
+    #         ]
+
+    #         hub.b_conn_nodes.extend(f_hubs)
