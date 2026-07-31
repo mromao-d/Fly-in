@@ -14,7 +14,7 @@ if __name__ == '__main__':
         medium3 = './maps/medium/03_priority_puzzle.txt'
         hard3 = './maps/hard/03_ultimate_challenge.txt'
         file4 = './maps/challenger/01_the_impossible_dream.txt'
-        confs = ReadConfs(hard3)
+        confs = ReadConfs(medium3)
         # for con in confs.all_connections:
         #     print(f"{con.start} with confs: {confs}")
         di = Algo(confs)

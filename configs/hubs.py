@@ -54,7 +54,7 @@ class HubNodes:
         self.grid_size = tuple[int, int]
         self.color = "green"
         self.extract_confs()
-        self.map_drones()
+        # self.map_drones()
 
     def print_node(self) -> None:
         print(
@@ -76,16 +76,16 @@ class HubNodes:
                 self.zone = ZoneType[conf.split('=')[1].lower()]
         return None
 
-    def map_drones(self) -> None:
-        from drones import Drones
-        if self.hub_type == HubType.start_hub:
-            for i in range(self.max_drones):
-                self.drones.append(
-                    Drones(
-                        id=i + 1,
-                        hub=self
-                    )
-                )
+    # def map_drones(self) -> None:
+    #     from drones import Drones
+    #     if self.hub_type == HubType.start_hub:
+    #         for i in range(self.max_drones):
+    #             self.drones.append(
+    #                 Drones(
+    #                     id=i + 1,
+    #                     hub=self
+    #                 )
+    #             )
 
     # def map_connections(self) -> None:
     #     for conn in self.confs.

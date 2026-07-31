@@ -1,6 +1,7 @@
 import re
 from hubs import HubType, HubNodes
 from connection_nodes import ConnectionNodes
+from drones import Drones
 
 
 class ReadConfs:
@@ -12,12 +13,15 @@ class ReadConfs:
         self.file_info = None
         self.hubs: list[HubNodes] = []
         self.all_connections: list[ConnectionNodes] = []
+        self.all_drones: list[Drones] = []
         self.nb_drones = 0
+        self.time = 2
         self.parse_txt()
         self.normalize_coords()
         self.map_coords()
         self.map_hub_conns()
         self.map_conn_coords()
+        self.map_drones()
         # self.map_connections()
         # self.map_b_hub_conns()
 
@@ -151,6 +155,18 @@ class ReadConfs:
             )
 
         return None
+
+    def map_drones(self) -> None:
+        start = [_ for _ in self.hubs if _.hub_type == HubType.start_hub][0]
+
+        for i in range(start.max_drones):
+            drone = Drones(
+                id=i + 1,
+                hub=start,
+                time=self.time
+            )
+            self.all_drones.append(drone)
+            start.drones.append(drone)
 
     # def map_connections(self):
     #     """

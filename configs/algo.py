@@ -2,7 +2,6 @@ from read_confs import ReadConfs
 from hubs import HubNodes, ZoneType, HubType
 from paths import Paths
 from drones import Drones
-from connection_nodes import ConnectionNodes
 
 
 class Algo:
@@ -168,10 +167,10 @@ class Algo:
         self.all_paths = set()
         self.find_all_paths(self.find_start())
 
-        sorted_paths = sorted(self.all_paths, key=lambda x: x.cost)
         sorted_paths = sorted(
-            sorted_paths, key=lambda x: x.priority, reverse=True
+            self.all_paths, key=lambda x: x.priority, reverse=True
         )
+        sorted_paths = sorted(sorted_paths, key=lambda x: x.cost)
 
         return sorted_paths
 
@@ -186,15 +185,6 @@ class Algo:
         ]
         return hubs_w_drones
 
-    # def connections_w_drones(self) -> list[ConnectionNodes]:
-    #     for conn in self.confs.all_connections:
-    #         conn.pass_drones = len(conn.drones)
-    #     connections = [
-    #         _ for _ in self.confs.all_connections if len(_.drones) > 0
-    #     ]
-
-    #     return connections
-
     def move_drones_hubs(
             self,
             drone: Drones,
@@ -203,20 +193,24 @@ class Algo:
     ) -> tuple[bool, list[str]]:
         log = []
         for idx_h, hub in enumerate(hubs):
-
-            try:
+            if drone.hub != hub:
+                continue
+            else:
                 idx_d = hub.drones.index(drone)
-            except ValueError:
+
+            if (next is False):
                 continue
 
-            if (
-                next is False
-                or len(hubs[idx_h + 1].drones) == hubs[idx_h + 1].max_drones
-            ):
+            if drone.coord != drone.hub.coord:
+                drone.in_conn = True
+                drone.progress = 0
+                drone.moving = True
                 continue
+            else:
+                self.in_conn = False
 
             if (
-                drone in hub.drones
+                drone.hub == hub
                 and drone.moved is False
             ):
                 conn = [
@@ -226,8 +220,6 @@ class Algo:
                         and _.end == hubs[idx_h + 1].hub_name
                     )
                 ][0]
-                # if conn.path == 'fast_path-merge_point':
-                #     print(f"conn pass drones is {conn.pass_drones} and max capacity is {conn.max_drones}")
 
                 if conn.pass_drones == conn.max_drones:
                     continue
@@ -235,57 +227,49 @@ class Algo:
                 if hubs[idx_h + 1].hub_type == HubType.end_hub:
                     drone.finished = True
 
-                if (
-                    hubs[idx_h + 1].zone == ZoneType.restricted
-                    and conn.pass_drones < conn.max_drones
-                ):
-                    log.append(
-                            f"D{drone.id}-{conn.path}"
-                        )
-                    conn.drones.append(drone)
-                    hubs[idx_h].drones.pop(idx_d)
-                    drone.conn = conn
-                    drone.conn_wait += 2
-                    drone.conn_turns += 2
-                else:
-                    hubs[idx_h + 1].drones.append(drone)
-                    log.append(
-                            f"D{drone.id}-"
-                            f"{hubs[idx_h + 1].hub_name}"
-                        )
-                    hubs[idx_h].drones.pop(idx_d)
-                    drone.conn_turns += 1
+                drone.prev_hub = drone.hub
+                drone.hub = hubs[idx_h + 1]
+
+                hubs[idx_h + 1].drones.append(drone)
+                log.append(
+                        f"D{drone.id}-"
+                        f"{hubs[idx_h + 1].hub_name}"
+                    )
+                hubs[idx_h].drones.pop(idx_d)
+                drone.conn_turns += 1
 
                 conn.pass_drones += 1
                 drone.moved = True
                 next = False
+                drone.progress = 0
+                drone.moving = True
 
                 break
         return next, log
 
-    def move_drones_conns(
-            self,
-            drone: Drones
-    ) -> list[str]:
-        log = []
-        # print("-----------------")
+    # def move_drones_conns(
+    #         self,
+    #         drone: Drones
+    # ) -> list[str]:
+    #     log = []
+    #     # print("-----------------")
 
-        conn = drone.conn
-        # print(f"move_drones_conns: connection {conn.path} has drone D{drone.id}")
-        hub_end = [
-            _ for _ in self.confs.hubs if _.hub_name == drone.conn.end
-        ]
-        # print(f"hubs: {[_.hub_name for _ in hub_end]}")
+    #     conn = drone.conn
+    #     hub_end = [
+    #         _ for _ in self.confs.hubs if _.hub_name == drone.conn.end
+    #     ]
 
-        hub_end = hub_end[0]
-        if len(hub_end.drones) == hub_end.max_drones:
-            raise ("shit in max drones. Need another protection")
-        hub_end.drones.append(drone)
-        conn.drones.pop(conn.drones.index(drone))
-        conn.pass_drones = len(conn.drones)
-        drone.conn = None
-        # print()
-        return log
+    #     hub_end = hub_end[0]
+    #     if len(hub_end.drones) == hub_end.max_drones:
+    #         raise ("shit in max drones. Need another protection")
+    #     hub_end.drones.append(drone)
+    #     conn.drones.pop(conn.drones.index(drone))
+    #     conn.pass_drones = len(conn.drones)
+    #     drone.conn = None
+    #     return log
+    def reset_conns(self):
+        for _ in self.confs.all_connections:
+            _.pass_drones = 0
 
     def walk_one(
             self,
@@ -295,35 +279,27 @@ class Algo:
 
         log = []
         paths = self.sorted_paths
+        self.reset_conns()
 
         for drone in drones:
-            if type == 'connection':
-                # pass
-                log.extend(self.move_drones_conns(drone))
-            else:
-                next = True
-                for path in paths:
-                    # if next is False:
-                    #     break
+            next = True
+            for path in paths:
 
-                    if len(drones) == 0:
-                        break
+                if len(drones) == 0:
+                    break
 
-                    # validate drones in hubs
-                    if type == 'hub':
-                        next, this_log = self.move_drones_hubs(
-                            drone, path.hubs, next
-                        )
-                    log.extend(this_log)
+                # validate drones in hubs
+                next, this_log = self.move_drones_hubs(
+                    drone, path.hubs, next
+                )
+                log.extend(this_log)
 
         return log
 
     def find_drones_h(self) -> list[Drones]:
-        drones = []
-        for hub in self.confs.hubs:
-            for drone in hub.drones:
-                drone.moved = False
-                drones.append(drone)
+        drones = self.confs.all_drones
+        for drone in drones:
+            drone.moved = False
 
         drones = [
             drone for drone in sorted(drones, key=lambda x: x.id)
@@ -331,58 +307,18 @@ class Algo:
         ]
         return drones
 
-    def find_drones_c(self) -> list[Drones]:
-        drones = []
-        for conn in self.confs.all_connections:
-            conn.pass_drones = len([
-                _ for _ in conn.drones
-                if _.conn_wait == 2
-            ])
-            for drone in conn.drones:
-                drone.moved = False
-                drone.conn_wait -= 1
-                drones.append(drone)
-
-        drones = [
-            drone for drone in sorted(drones, key=lambda x: x.id)
-            if drone.finished is False and drone.conn_wait == 0
-        ]
-        return drones
-
-    def find_after_conn(self) -> list[Drones]:
-        drones = []
-        for conn in self.confs.all_connections:
-            for drone in conn.drones:
-                drone.moved = False
-                if drone.conn_wait < 0:
-                    raise "Shit happened here"
-
-                hubs = list(
-                    filter(lambda x: x.hub_name == conn.end, self.confs.hubs)
-                )
-                drones.extend([_.drones for _ in hubs])
-
-        return drones
-
     def walk(self) -> None:
-        import time
-        time.sleep(4)
         log = []
 
-        drones_after_conns = self.find_after_conn()
-        if len(drones_after_conns) != 0:
-            log.extend(self.walk_one(drones_after_conns))
-
-        drones_conns = self.find_drones_c()
-        if len(drones_conns) != 0:
-            self.walk_one(drones_conns, type='connection')
-
         drones_hubs = self.find_drones_h()
-        drones_hubs = list(
-            filter(lambda x: x not in drones_conns, drones_hubs)
-        )
+        # drones_hubs = list(
+        #     drones_hubs
+        # )
+
         if len(drones_hubs) != 0:
+            # print(f"drones_hubs are {drones_hubs}")
             log.extend(self.walk_one(drones_hubs))
         if len(log):
             print(" ".join(log))
+
         return None
