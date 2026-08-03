@@ -64,11 +64,14 @@ class RenderMap:
 
         pygame.init()
         WIDTH, HEIGHT = 1600, 900
-        radius = 40
+        radius = 20
         screen = pygame.display.set_mode((WIDTH, HEIGHT))
         font = pygame.font.SysFont(None, 15)
         running = True
         di = Algo(self.confs)
+
+        drone_img = pygame.image.load("./configs/img/drone.png").convert_alpha()
+        drone_img = pygame.transform.scale(drone_img, (50, 50))
         # paths = di.all_paths
         while running:
             WIDTH, HEIGHT = screen.get_size()
@@ -117,9 +120,13 @@ class RenderMap:
             for i, drone in enumerate(self.confs.all_drones):
                 drone_x = (drone.curr_coord[0] + 1) * (WIDTH / (self.grid_size[0] + 2))
                 drone_y = (drone.curr_coord[1] + 1) * (HEIGHT / (self.grid_size[1] + 2))
-                pygame.draw.rect(screen, "grey", (drone_x, drone_y, arest, arest))
+
+                screen.blit(drone_img, (drone_x, drone_y))
+
                 text = font.render(f"D{drone.id}", True, "black")
-                text_rect = text.get_rect(center=(drone_x + arest / 2, drone_y + arest / 2))
+                text_rect = text.get_rect(
+                    center=(drone_x + arest / 2, drone_y + arest / 2)
+                )
                 screen.blit(text, text_rect)
 
             self.render_txt(
