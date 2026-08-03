@@ -63,7 +63,7 @@ class RenderMap:
     def run(self):
 
         pygame.init()
-        WIDTH, HEIGHT = 800, 600
+        WIDTH, HEIGHT = 1600, 900
         radius = 40
         screen = pygame.display.set_mode((WIDTH, HEIGHT))
         font = pygame.font.SysFont(None, 15)
@@ -113,11 +113,10 @@ class RenderMap:
                 )
 
                 arest = 20
-                plus_size = 4
 
             for i, drone in enumerate(self.confs.all_drones):
-                drone_x = (drone.curr_coord[0] + 1) * (WIDTH / (self.grid_size[0] + 2)) + plus_size * i
-                drone_y = (drone.curr_coord[1] + 1) * (HEIGHT / (self.grid_size[1] + 2)) + plus_size * i
+                drone_x = (drone.curr_coord[0] + 1) * (WIDTH / (self.grid_size[0] + 2))
+                drone_y = (drone.curr_coord[1] + 1) * (HEIGHT / (self.grid_size[1] + 2))
                 pygame.draw.rect(screen, "grey", (drone_x, drone_y, arest, arest))
                 text = font.render(f"D{drone.id}", True, "black")
                 text_rect = text.get_rect(center=(drone_x + arest / 2, drone_y + arest / 2))
@@ -131,18 +130,6 @@ class RenderMap:
                 screen
             )
 
-            # for conn in self.confs.all_connections:
-            #     conn_x = (conn.coord[0] + 1) * (WIDTH / (self.grid_size[0] + 2))
-            #     conn_y = (conn.coord[1] + 1) * (HEIGHT / (self.grid_size[1] + 2))
-            #     for i, drone in enumerate(conn.drones):
-            #         coords = (conn_x + plus_size * i, conn_y + plus_size * i)
-            #         pygame.draw.rect(screen, "grey", (coords[0], coords[1], arest, arest))
-            #         text = font.render(f"D{drone.id}", True, "black")
-            #         text_rect = text.get_rect(center=(coords[0] + arest / 2, coords[1] + arest / 2))
-            #         screen.blit(text, text_rect)
-
-            # pygame.display.flip()
-
             if not any(drone.moving for drone in self.confs.all_drones):
                 di.walk()
 
@@ -150,8 +137,5 @@ class RenderMap:
                 drone.move()
 
             pygame.display.flip()
-            # di.walk_one()
-            # di.hubs_w_drones = di.f_hubs_w_drones()
-            # running = False
 
         pygame.quit()

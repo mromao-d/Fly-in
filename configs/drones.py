@@ -29,7 +29,7 @@ class Drones:
         if not self.moving:
             return
 
-        frames = 0.00009
+        frames = 0.0009
 
         if self.progress >= 1:
             if self.hub.hub_type == HubType.end_hub:

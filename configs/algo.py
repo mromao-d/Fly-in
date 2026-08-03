@@ -353,7 +353,7 @@ class Algo:
 
         drones = [
             drone for drone in sorted(drones, key=lambda x: x.id)
-            if drone.finished is False and drone.conn_wait == 0
+            if drone.finished is False
         ]
         return drones
 
