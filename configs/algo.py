@@ -2,7 +2,6 @@ from read_confs import ReadConfs
 from hubs import HubNodes, ZoneType, HubType
 from paths import Paths
 from drones import Drones
-from connection_nodes import ConnectionNodes
 
 
 class Algo:
@@ -232,16 +231,17 @@ class Algo:
                 if conn.pass_drones == conn.max_drones:
                     continue
 
-                if hubs[idx_h + 1].hub_type == HubType.end_hub:
-                    drone.finished = True
-
                 if (
                     hubs[idx_h + 1].zone == ZoneType.restricted
                     and conn.pass_drones < conn.max_drones
                 ):
                     log.append(
-                            f"D{drone.id}-{conn.path}"
+                            f"D{drone.id}-{conn.end}"
                         )
+
+                    drone.start_coord = drone.target_coord
+                    drone.target_coord = conn.coord
+
                     conn.drones.append(drone)
                     hubs[idx_h].drones.pop(idx_d)
                     drone.conn = conn
@@ -253,6 +253,12 @@ class Algo:
                             f"D{drone.id}-"
                             f"{hubs[idx_h + 1].hub_name}"
                         )
+
+                    drone.start_coord = drone.target_coord
+                    drone.target_coord = hubs[idx_h + 1].coord
+                    drone.hub = hubs[idx_h + 1]
+
+                    drone.coord = hubs[idx_h + 1].coord
                     hubs[idx_h].drones.pop(idx_d)
                     drone.conn_turns += 1
 
@@ -271,7 +277,7 @@ class Algo:
         # print("-----------------")
 
         conn = drone.conn
-        # print(f"move_drones_conns: connection {conn.path} has drone D{drone.id}")
+
         hub_end = [
             _ for _ in self.confs.hubs if _.hub_name == drone.conn.end
         ]
@@ -280,6 +286,8 @@ class Algo:
         hub_end = hub_end[0]
         if len(hub_end.drones) == hub_end.max_drones:
             raise ("shit in max drones. Need another protection")
+        drone.start_coord = drone.target_coord
+        drone.target_coord = hub_end.coord
         hub_end.drones.append(drone)
         conn.drones.pop(conn.drones.index(drone))
         conn.pass_drones = len(conn.drones)
@@ -364,11 +372,16 @@ class Algo:
 
         return drones
 
+    def reset_moving(self):
+        for drone in self.confs.all_drones:
+            drone.moving = True
+            drone.progress = 0
+
     def walk(self) -> None:
-        import time
-        time.sleep(4)
         log = []
 
+        self.reset_moving()
+        self.hubs_w_drones = self.f_hubs_w_drones()
         drones_after_conns = self.find_after_conn()
         if len(drones_after_conns) != 0:
             log.extend(self.walk_one(drones_after_conns))

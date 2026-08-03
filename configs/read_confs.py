@@ -1,6 +1,7 @@
 import re
 from hubs import HubType, HubNodes
 from connection_nodes import ConnectionNodes
+from drones import Drones
 
 
 class ReadConfs:
@@ -12,12 +13,14 @@ class ReadConfs:
         self.file_info = None
         self.hubs: list[HubNodes] = []
         self.all_connections: list[ConnectionNodes] = []
+        self.all_drones: list[Drones] = []
         self.nb_drones = 0
         self.parse_txt()
         self.normalize_coords()
         self.map_coords()
         self.map_hub_conns()
         self.map_conn_coords()
+        self.map_drones()
         # self.map_connections()
         # self.map_b_hub_conns()
 
@@ -74,8 +77,6 @@ class ReadConfs:
                     pass
                 finally:
                     line = fd.readline()
-        # except FileNotFoundError as e:
-        #     print(e)
 
     def normalize_coords(self):
         """
@@ -141,9 +142,7 @@ class ReadConfs:
     def map_conn_coords(self) -> None:
         for conn in self.all_connections:
             start_node = [_ for _ in self.hubs if _.hub_name == conn.start][0]
-            # print(f"start_node is {start_node}")
             end_node = [_ for _ in self.hubs if _.hub_name == conn.end][0]
-            # print(f"end_node is {end_node}")
 
             conn.coord = (
                 abs(start_node.coord[0] - end_node.coord[0]) / 2,
@@ -152,27 +151,11 @@ class ReadConfs:
 
         return None
 
-    # def map_connections(self):
-    #     """
-    #     Maps the forward hubs for each hub
-    #     """
+    def map_drones(self) -> None:
+        start = [_ for _ in self.hubs if _.hub_type == HubType.start_hub][0]
 
-    #     print(f"conns are {[conn.path for conn in conns]}")
-
-    # def map_b_hub_conns(self):
-    #     """
-    #     Maps the forward hubs for each hub
-    #     """
-    #     for hub in self.hubs:
-    #         f_hubs = []
-    #         connections = [
-    #             conn.start for conn in self.all_connections
-    #             if conn.end == hub.hub_name
-    #         ]
-
-    #         f_hubs = [
-    #             front_hub for front_hub in self.hubs
-    #             if front_hub.hub_name in connections
-    #         ]
-
-    #         hub.b_conn_nodes.extend(f_hubs)
+        for drone in start.drones:
+            drone.start_coord = start.coord
+            drone.target_coord = start.coord
+            drone.curr_coord = start.coord
+            self.all_drones.append(drone)
