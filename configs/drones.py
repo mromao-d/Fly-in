@@ -34,6 +34,7 @@ class Drones:
         if self.progress >= 1:
             if self.hub.hub_type == HubType.end_hub:
                 self.finished = True
+            self.start_coord = self.target_coord
             self.progress = 1
             self.moving = False
 

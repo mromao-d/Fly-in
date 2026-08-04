@@ -145,8 +145,8 @@ class ReadConfs:
             end_node = [_ for _ in self.hubs if _.hub_name == conn.end][0]
 
             conn.coord = (
-                abs(start_node.coord[0] - end_node.coord[0]) / 2,
-                abs(start_node.coord[1] - end_node.coord[1]) / 2
+                abs(start_node.coord[0] + end_node.coord[0]) / 2,
+                abs(start_node.coord[1] + end_node.coord[1]) / 2
             )
 
         return None

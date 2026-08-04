@@ -49,9 +49,8 @@ class Algo:
         start = self.find_start()
         if start:
             q = [start]
-            visited = set()
+            visited = {start}
             start.level = 0
-            q.append(start)
 
             while q:
                 hub = q.pop(0)
@@ -65,8 +64,8 @@ class Algo:
 
                     adj.level = hub.level + 1
 
-                    q.append(adj)
                     visited.add(adj)
+                    q.append(adj)
 
         return None
 
@@ -167,11 +166,16 @@ class Algo:
         self.all_paths = set()
         self.find_all_paths(self.find_start())
 
-        sorted_paths = sorted(self.all_paths, key=lambda x: x.cost)
         sorted_paths = sorted(
-            sorted_paths, key=lambda x: x.priority, reverse=True
+            self.all_paths, key=lambda x: x.priority, reverse=True
+        )
+        sorted_paths = sorted(
+            sorted_paths, key=lambda x: x.cost
         )
 
+        # for path in sorted_paths:
+        #     print(f"path is {[(_.hub_name) for _ in path.hubs]} with cost {path.cost} and priority {path.priority}")
+        #     print()
         return sorted_paths
 
     def f_hubs_w_drones(self) -> None:
@@ -212,6 +216,7 @@ class Algo:
                 next is False
                 or len(hubs[idx_h + 1].drones) == hubs[idx_h + 1].max_drones
             ):
+                # drone.moving = False
                 continue
 
             if (
@@ -229,6 +234,7 @@ class Algo:
                 #     print(f"conn pass drones is {conn.pass_drones} and max capacity is {conn.max_drones}")
 
                 if conn.pass_drones == conn.max_drones:
+                    # drone.moving = False
                     continue
 
                 if (
@@ -328,13 +334,18 @@ class Algo:
 
     def find_drones_h(self) -> list[Drones]:
         drones = []
-        for hub in self.confs.hubs:
+        ordered_hubs = (
+            sorted(self.confs.hubs, key=lambda x: x.level, reverse=True)
+        )
+        # print([_.hub_name for _ in ordered_hubs])
+        for hub in ordered_hubs:
             for drone in hub.drones:
                 drone.moved = False
                 drones.append(drone)
 
         drones = [
-            drone for drone in sorted(drones, key=lambda x: x.id)
+            # drone for drone in sorted(drones, key=lambda x: x.id)
+            drone for drone in drones
             if drone.finished is False
         ]
         return drones
@@ -378,6 +389,9 @@ class Algo:
             drone.progress = 0
 
     def walk(self) -> None:
+        # for hub in self.confs.hubs:
+        #     print(f"hub {hub.hub_name} zone is {hub.zone}")
+        # print()
         log = []
 
         self.reset_moving()

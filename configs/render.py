@@ -2,12 +2,18 @@ import pygame
 import math
 from typing import Any
 from algo import Algo
+from hubs import ZoneType
 
 
 class RenderMap:
-    def __init__(self, ReadConfs):
+    def __init__(
+        self,
+        ReadConfs,
+        debug: bool = False
+    ):
         self.confs = ReadConfs
         self.grid_size = ReadConfs.grid_size
+        self.debug = debug
         self.run()
 
     def handle_events(self) -> bool:
@@ -72,6 +78,12 @@ class RenderMap:
 
         drone_img = pygame.image.load("./configs/img/drone.png").convert_alpha()
         drone_img = pygame.transform.scale(drone_img, (50, 50))
+
+        rest_img = pygame.image.load("./configs/img/rest.png").convert_alpha()
+        rest_img = pygame.transform.scale(rest_img, (30, 30))
+
+        pr_img = pygame.image.load("./configs/img/priority.png").convert_alpha()
+        pr_img = pygame.transform.scale(pr_img, (30, 30))
         # paths = di.all_paths
         while running:
             WIDTH, HEIGHT = screen.get_size()
@@ -83,8 +95,14 @@ class RenderMap:
                 hub_y = (hub.coord[1] + 1) * (HEIGHT / (self.grid_size[1] + 2))
 
                 for f_node in hub.conn_nodes:
-                    f_x = (f_node.coord[0] + 1) * (WIDTH / (self.grid_size[0] + 2))
-                    f_y = (f_node.coord[1] + 1) * (HEIGHT / (self.grid_size[1] + 2))
+                    f_x = (
+                        (f_node.coord[0] + 1)
+                        * (WIDTH / (self.grid_size[0] + 2))
+                    )
+                    f_y = (
+                        (f_node.coord[1] + 1)
+                        * (HEIGHT / (self.grid_size[1] + 2))
+                    )
 
                     pygame.draw.line(
                         screen,
@@ -107,19 +125,41 @@ class RenderMap:
                     (hub_x, hub_y),
                     radius
                 )
-                self.render_txt(
-                    font,
-                    hub.hub_name,
-                    (0, 0, 0),
-                    (hub_x, hub_y),
-                    screen
-                )
+                if self.debug is True:
+                    self.render_txt(
+                        font,
+                        hub.hub_name,
+                        (0, 0, 0),
+                        (hub_x, hub_y),
+                        screen
+                    )
+
+                    self.render_txt(
+                        font,
+                        f"max_drones: {str(hub.max_drones)}",
+                        (0, 0, 0),
+                        (hub_x, hub_y - 40),
+                        screen
+                    )
+
+                if hub.zone == ZoneType.restricted:
+                    screen.blit(rest_img, (hub_x + 10, hub_y + 10))
+
+                # if hub.zone.value == ZoneType.priority.value:
+                #     screen.blit(pr_img, (hub_x + 10, hub_y + 10))
 
                 arest = 20
 
             for i, drone in enumerate(self.confs.all_drones):
-                drone_x = (drone.curr_coord[0] + 1) * (WIDTH / (self.grid_size[0] + 2))
-                drone_y = (drone.curr_coord[1] + 1) * (HEIGHT / (self.grid_size[1] + 2))
+                drone_x = (
+                    (drone.curr_coord[0] + 1)
+                    * (WIDTH / (self.grid_size[0] + 2))
+                )
+
+                drone_y = (
+                    (drone.curr_coord[1] + 1)
+                    * (HEIGHT / (self.grid_size[1] + 2))
+                )
 
                 screen.blit(drone_img, (drone_x, drone_y))
 
@@ -129,13 +169,14 @@ class RenderMap:
                 )
                 screen.blit(text, text_rect)
 
-            self.render_txt(
-                font,
-                f"max_drones: {str(hub.max_drones)}",
-                (0, 0, 0),
-                (drone.curr_coord[0], drone.curr_coord[1] - 40),
-                screen
-            )
+            if self.debug is True:
+                self.render_txt(
+                    font,
+                    f"max_drones: {str(hub.max_drones)}",
+                    (0, 0, 0),
+                    (drone.curr_coord[0], drone.curr_coord[1] - 40),
+                    screen
+                )
 
             if not any(drone.moving for drone in self.confs.all_drones):
                 di.walk()
