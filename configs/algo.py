@@ -18,6 +18,7 @@ class Algo:
         self.all_paths: list[Paths] = []
         self.confs = confs
         self.finish = False
+        self.simulation_turns = 0
         self.graph = {}
         self.BFS()
         self.hub_validations()
@@ -122,6 +123,7 @@ class Algo:
                     and node.hub_type not in (
                         HubType.start_hub, HubType.end_hub
                     ))
+                or node.zone == ZoneType.blocked
             ):
                 return []
 
@@ -131,7 +133,6 @@ class Algo:
                 return [[node]]
 
             paths = []
-            # print(f"graph is {[_.hub_name for _ in self.graph]}")
             for adj_node in self.graph.get(node, []):
                 for path in find_path(adj_node, start, end, visited):
                     paths.append([node] + path)
@@ -173,9 +174,6 @@ class Algo:
             sorted_paths, key=lambda x: x.cost
         )
 
-        # for path in sorted_paths:
-        #     print(f"path is {[(_.hub_name) for _ in path.hubs]} with cost {path.cost} and priority {path.priority}")
-        #     print()
         return sorted_paths
 
     def f_hubs_w_drones(self) -> None:
@@ -188,15 +186,6 @@ class Algo:
             if hub.hub_type != HubType.end_hub
         ]
         return hubs_w_drones
-
-    # def connections_w_drones(self) -> list[ConnectionNodes]:
-    #     for conn in self.confs.all_connections:
-    #         conn.pass_drones = len(conn.drones)
-    #     connections = [
-    #         _ for _ in self.confs.all_connections if len(_.drones) > 0
-    #     ]
-
-    #     return connections
 
     def move_drones_hubs(
             self,
@@ -216,7 +205,6 @@ class Algo:
                 next is False
                 or len(hubs[idx_h + 1].drones) == hubs[idx_h + 1].max_drones
             ):
-                # drone.moving = False
                 continue
 
             if (
@@ -230,11 +218,8 @@ class Algo:
                         and _.end == hubs[idx_h + 1].hub_name
                     )
                 ][0]
-                # if conn.path == 'fast_path-merge_point':
-                #     print(f"conn pass drones is {conn.pass_drones} and max capacity is {conn.max_drones}")
 
                 if conn.pass_drones == conn.max_drones:
-                    # drone.moving = False
                     continue
 
                 if (
@@ -280,17 +265,15 @@ class Algo:
             drone: Drones
     ) -> list[str]:
         log = []
-        # print("-----------------")
 
         conn = drone.conn
 
         hub_end = [
             _ for _ in self.confs.hubs if _.hub_name == drone.conn.end
         ]
-        # print(f"hubs: {[_.hub_name for _ in hub_end]}")
 
         hub_end = hub_end[0]
-        if len(hub_end.drones) == hub_end.max_drones:
+        if len(hub_end.drones) >= hub_end.max_drones:
             raise ("shit in max drones. Need another protection")
         drone.start_coord = drone.target_coord
         drone.target_coord = hub_end.coord
@@ -317,13 +300,10 @@ class Algo:
             else:
                 next = True
                 for path in paths:
-                    # if next is False:
-                    #     break
 
                     if len(drones) == 0:
                         break
 
-                    # validate drones in hubs
                     if type == 'hub':
                         next, this_log = self.move_drones_hubs(
                             drone, path.hubs, next
@@ -337,14 +317,12 @@ class Algo:
         ordered_hubs = (
             sorted(self.confs.hubs, key=lambda x: x.level, reverse=True)
         )
-        # print([_.hub_name for _ in ordered_hubs])
         for hub in ordered_hubs:
             for drone in hub.drones:
                 drone.moved = False
                 drones.append(drone)
 
         drones = [
-            # drone for drone in sorted(drones, key=lambda x: x.id)
             drone for drone in drones
             if drone.finished is False
         ]
@@ -388,10 +366,7 @@ class Algo:
             drone.moving = True
             drone.progress = 0
 
-    def walk(self) -> None:
-        # for hub in self.confs.hubs:
-        #     print(f"hub {hub.hub_name} zone is {hub.zone}")
-        # print()
+    def walk(self) -> int:
         log = []
 
         self.reset_moving()
@@ -412,4 +387,5 @@ class Algo:
             log.extend(self.walk_one(drones_hubs))
         if len(log):
             print(" ".join(log))
-        return None
+            self.simulation_turns += 1
+        return self.simulation_turns, len(log) + len(drones_conns)

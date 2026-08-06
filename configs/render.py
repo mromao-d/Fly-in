@@ -3,20 +3,38 @@ import math
 from typing import Any
 from algo import Algo
 from hubs import ZoneType
+from read_confs import ReadConfs
 
 
 class RenderMap:
+    """
+    class that renders the map
+    Uses pgame
+    """
     def __init__(
         self,
-        ReadConfs,
+        ReadConfs: ReadConfs,
         debug: bool = False
     ):
+        """
+        initiates the class
+
+        Args:
+            confs (ReadConfs)
+            debug (bool): possibility to print more stuff if needed
+        """
         self.confs = ReadConfs
         self.grid_size = ReadConfs.grid_size
         self.debug = debug
         self.run()
 
     def handle_events(self) -> bool:
+        """
+        handles quit for exiting pygame
+
+        returns:
+            bool, to stop running the loop
+        """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
@@ -30,6 +48,16 @@ class RenderMap:
         xy: tuple[int, int],
         screen: Any
     ) -> None:
+        """
+        function to render text using pygame
+
+        Args:
+            font (Any): SysFont for pygame
+            txt (str): text to display
+            color(tuple[int, int, int]): color to be displayed
+            xy (tuple[int, int]): position
+            screen(Any): game screen
+        """
         text = font.render(txt, True, color)
         text_rect = text.get_rect(center=xy)
 
@@ -38,7 +66,24 @@ class RenderMap:
         return None
 
     @staticmethod
-    def draw_arrow(screen, color, start, end, radius) -> None:
+    def draw_arrow(
+        screen: Any,
+        color: tuple[int, int, int],
+        start: tuple[int, int],
+        end: tuple[int, int],
+        radius
+    ) -> None:
+        """
+        function to draw arrows between Hubs
+
+        Args:
+            font (Any): SysFont for pygame
+            txt (str): text to display
+            color(tuple[int, int, int]): color to be displayed
+            start (tuple[int, int]): start position
+            end (tuple[int, int]): end position
+            screen(Any): game screen
+        """
         angle = math.atan2(end[1] - start[1], end[0] - start[0])
 
         # Move the arrow tip back to the edge of the circle
@@ -66,25 +111,47 @@ class RenderMap:
 
         return None
 
-    def run(self):
+    def run(self) -> None:
+        """
+        function That renders the map
+        it also solves the puzzle as the program runs
+
+        Args:
+            None
+        """
 
         pygame.init()
-        WIDTH, HEIGHT = 1600, 900
+        WIDTH_main, HEIGHT_main = 1600, 900
+        WIDTH = WIDTH_main - 100
+        HEIGHT = HEIGHT_main - 100
         radius = 20
         screen = pygame.display.set_mode((WIDTH, HEIGHT))
         font = pygame.font.SysFont(None, 15)
         running = True
         di = Algo(self.confs)
 
-        drone_img = pygame.image.load("./configs/img/drone.png").convert_alpha()
+        drone_img = pygame.image.load(
+            "./configs/img/drone.png"
+        ).convert_alpha()
         drone_img = pygame.transform.scale(drone_img, (50, 50))
 
-        rest_img = pygame.image.load("./configs/img/rest.png").convert_alpha()
+        rest_img = pygame.image.load(
+            "./configs/img/rest.png"
+        ).convert_alpha()
         rest_img = pygame.transform.scale(rest_img, (30, 30))
 
-        pr_img = pygame.image.load("./configs/img/priority.png").convert_alpha()
+        pr_img = pygame.image.load(
+            "./configs/img/priority.png"
+        ).convert_alpha()
         pr_img = pygame.transform.scale(pr_img, (30, 30))
-        # paths = di.all_paths
+
+        bl_img = pygame.image.load(
+            "./configs/img/blocked.png"
+        ).convert_alpha()
+        bl_img = pygame.transform.scale(bl_img, (30, 30))
+
+        total_cost = 0
+
         while running:
             WIDTH, HEIGHT = screen.get_size()
             running = self.handle_events()
@@ -145,8 +212,11 @@ class RenderMap:
                 if hub.zone == ZoneType.restricted:
                     screen.blit(rest_img, (hub_x + 10, hub_y + 10))
 
-                # if hub.zone.value == ZoneType.priority.value:
-                #     screen.blit(pr_img, (hub_x + 10, hub_y + 10))
+                if hub.zone == ZoneType.priority:
+                    screen.blit(pr_img, (hub_x + 10, hub_y + 10))
+
+                if hub.zone == ZoneType.blocked:
+                    screen.blit(bl_img, (hub_x + 10, hub_y + 10))
 
                 arest = 20
 
@@ -179,10 +249,35 @@ class RenderMap:
                 )
 
             if not any(drone.moving for drone in self.confs.all_drones):
-                di.walk()
+                simulation_turns, drones_moved = di.walk()
 
             for drone in self.confs.all_drones:
                 drone.move()
+
+            total_cost = sum([_.conn_turns for _ in self.confs.all_drones])
+            self.render_txt(
+                pygame.font.SysFont(None, 35),
+                f"total path cost: {total_cost}",
+                (0, 0, 0),
+                (WIDTH - 150, HEIGHT - 100),
+                screen
+            )
+
+            self.render_txt(
+                pygame.font.SysFont(None, 35),
+                f"drones moved: {drones_moved}",
+                (0, 0, 0),
+                (WIDTH - 150, HEIGHT - 70),
+                screen
+            )
+
+            self.render_txt(
+                pygame.font.SysFont(None, 35),
+                f"simulation turns: {simulation_turns}",
+                (0, 0, 0),
+                (WIDTH - 150, HEIGHT - 40),
+                screen
+            )
 
             pygame.display.flip()
 

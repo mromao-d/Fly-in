@@ -1,8 +1,11 @@
 from enum import Enum
-# from connection_nodes import ConnectionNodes
+from exceptions import ConfsError
 
 
 class HubType(Enum):
+    """
+    enum class with the distinct hub types
+    """
     start_hub = 'start_hub'
     end_hub = 'end_hub'
     hub = 'hub'
@@ -10,10 +13,13 @@ class HubType(Enum):
 
 
 class ZoneType(Enum):
+    """
+    enum class with the distinct hub zone types
+    """
     normal = 1
     blocked = -1
     restricted = 2
-    priority = 1
+    priority = 0
 
 
 # need to validate if there is start and end
@@ -57,6 +63,10 @@ class HubNodes:
         self.map_drones()
 
     def print_node(self) -> None:
+        """
+        Auxiliar method for debugin
+        prints node information
+        """
         print(
             f"location is {self.hub_type.name} and "
             f"name is {self.hub_name} and coords are {self.coord}"
@@ -64,19 +74,42 @@ class HubNodes:
         return None
 
     def extract_confs(self) -> None:
+        """
+        extracts confs metadata
+        ensures no more metada is available
+        """
         for conf in self.confs.split(' '):
             if "color" in conf.lower():
                 self.color = conf.split('=')[1].lower()
-            if (
+            elif (
                 "max_drones" in conf.lower()
-                and self.hub_type.name not in ('start_hub', 'end_hub')
             ):
-                self.max_drones = int(conf.split('=')[1])
-            if "zone" in conf.lower():
-                self.zone = ZoneType[conf.split('=')[1].lower()]
+                try:
+                    m_d = int(conf.split('=')[1])
+                    if self.hub_type.name not in ('start_hub', 'end_hub'):
+                        self.max_drones = m_d
+                except Exception:
+                    raise ConfsError(
+                        f"max_dones '{conf.split('=')[1]}' is not numeric"
+                    )
+                if m_d < 1:
+                    raise ConfsError(f"max_dones {m_d} is lower than 0")
+            elif "zone" in conf.lower():
+                try:
+                    self.zone = ZoneType[conf.split('=')[1].lower()]
+                except Exception:
+                    raise ConfsError(
+                        f"Zone {conf.split('=')[1].lower()} does not exist"
+                    )
+            else:
+                raise ConfsError(f"unkonw metadata {conf.lower()}")
         return None
 
     def map_drones(self) -> None:
+        """
+        maps the drones
+        initially they all are on the start node
+        """
         from drones import Drones
         if self.hub_type == HubType.start_hub:
             for i in range(self.max_drones):

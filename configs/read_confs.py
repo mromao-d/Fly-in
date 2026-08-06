@@ -2,13 +2,22 @@ import re
 from hubs import HubType, HubNodes
 from connection_nodes import ConnectionNodes
 from drones import Drones
+from exceptions import ConfsError
 
 
 class ReadConfs:
+    """
+    main part of the program
+    reads and treats the confs
+    """
     def __init__(
             self,
-            file_path
+            file_path: str
     ):
+        """
+        inits class
+        Args: file path
+        """
         self.file_path: str = file_path
         self.file_info = None
         self.hubs: list[HubNodes] = []
@@ -21,10 +30,14 @@ class ReadConfs:
         self.map_hub_conns()
         self.map_conn_coords()
         self.map_drones()
+        self.val_connections()
         # self.map_connections()
         # self.map_b_hub_conns()
 
     def file_exists(self) -> None:
+        """
+        validates if file exists in path
+        """
         try:
             with open(self.file_path):
                 pass
@@ -34,13 +47,24 @@ class ReadConfs:
             raise FileNotFoundError(f"File {self.file_path} not found")
 
     def parse_txt(self):
+        """
+        reads the file and extracts the configs
+        """
         self.file_exists()
         with open(self.file_path) as fd:
             line = fd.readline()
+            line = fd.readline()
+            if "nb_drones" in line:
+                aux_d = line.split("nb_drones: ")
+                if len(aux_d) != 2:
+                    raise ConfsError("wrong config for nb drones")
+                self.nb_drones = int(aux_d[-1])
+            else:
+                raise ConfsError("First line must contain number of drones")
+            if self.nb_drones < 1:
+                raise ConfsError("number of drones must be > 0")
+            line = fd.readline()
             while (line):
-                if "nb_drones" in line:
-                    self.nb_drones = int(line.split("nb_drones: ")[-1])
-                    # print(f"nb drones is {self.nb_drones}")
                 try:
                     hub = HubType(line.split(":")[0])
                     confs = re.search(r"\[(.*?)\]", line)
@@ -140,6 +164,9 @@ class ReadConfs:
             hub.connections.extend(conns)
 
     def map_conn_coords(self) -> None:
+        """
+        maps all connection coords
+        """
         for conn in self.all_connections:
             start_node = [_ for _ in self.hubs if _.hub_name == conn.start][0]
             end_node = [_ for _ in self.hubs if _.hub_name == conn.end][0]
@@ -152,6 +179,9 @@ class ReadConfs:
         return None
 
     def map_drones(self) -> None:
+        """
+        maps all drones that are in the start hub to confs
+        """
         start = [_ for _ in self.hubs if _.hub_type == HubType.start_hub][0]
 
         for drone in start.drones:
@@ -159,3 +189,29 @@ class ReadConfs:
             drone.target_coord = start.coord
             drone.curr_coord = start.coord
             self.all_drones.append(drone)
+
+    def val_connections(self) -> None:
+        """
+        Validates if connections confs such as:
+            - same start and end
+            - working both ways
+        """
+        conns = []
+        for conn in self.all_connections:
+            if conn.start == conn.end:
+                raise ConfsError(
+                    f"Start and end have the same value: {conn.end}"
+                )
+            sort = sorted([conn.start, conn.end])
+            conns.extend([sort])
+        for conn in conns:
+            if len(
+                list(
+                    filter(lambda x: x == conn, conns)
+                )
+            ) > 1:
+                raise ConfsError(
+                    f"This conn works both ways: {conn}"
+                )
+
+        return None

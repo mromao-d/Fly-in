@@ -3,8 +3,6 @@ from read_confs import ReadConfs
 from algo import Algo
 import traceback
 
-# duvidas:
-## caso o caralho do drones demore 2 turnos a chegar, o caralho do caminho pode ser usado por outro drone quando o caralho do 1º drone é entre à porra do hub?
 
 if __name__ == '__main__':
     try:
@@ -15,17 +13,8 @@ if __name__ == '__main__':
         hard3 = './maps/hard/03_ultimate_challenge.txt'
         file4 = './maps/challenger/01_the_impossible_dream.txt'
         confs = ReadConfs(hard3)
-        # for con in confs.all_connections:
-        #     print(f"{con.start} with confs: {confs}")
         di = Algo(confs)
-        # for conn in di.confs.all_connections:
-        #     print(f"conn {conn.path} has capacity of {conn.max_link_capacity} with max_drones = {conn.max_drones}")
-        # drones = di.find_drones()
-        # di.walk_one(drones)
-        # drones = di.find_drones()
-        # di.walk_one(drones)
-        # di.walk()
         map = RenderMap(confs)
     except Exception as e:
         print(f"ERROR || {e}")
-        traceback.print_exc()
+        # traceback.print_exc()

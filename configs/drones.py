@@ -2,6 +2,9 @@ from hubs import HubNodes, HubType
 
 
 class Drones:
+    """
+    drones class that will go through the graph
+    """
     def __init__(
         self,
         id: int,
@@ -9,6 +12,14 @@ class Drones:
         moved: bool = False,
         finished: bool = False,
     ):
+        """
+        inits class
+        Args:
+            id (int): id of the drone (from 1 to nb_drones)
+            hub (HubNodes): current hub node
+            moved (bool): if drone has moved in current turn
+            finished (bool): if drone has reached final hub
+        """
         self.id = id
         self.hub = hub
         self.moved = moved
@@ -17,6 +28,7 @@ class Drones:
         self.conn = None
         self.conn_wait = 0
         self.conn_turns = 0
+        # self.cost = 0
 
         self.start_coord = (0, 0)
         self.target_coord = (0, 0)
@@ -24,8 +36,11 @@ class Drones:
         self.progress = 0
         self.moving = False
 
-    def move(self):
-        # print(f"drone is movig")
+    def move(self) -> None:
+        """
+        simulates movement of the drone
+        between a start position and an end position
+        """
         if not self.moving:
             return
 
@@ -48,3 +63,5 @@ class Drones:
 
         if self.finished is False:
             self.curr_coord = (x, y)
+
+        return None
