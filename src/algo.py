@@ -2,6 +2,7 @@ from .read_confs import ReadConfs
 from .hubs import HubNodes, ZoneType, HubType
 from .paths import Paths
 from .drones import Drones
+from typing import Any
 
 
 class Algo:
@@ -94,7 +95,7 @@ class Algo:
         return None
 
     @staticmethod
-    def is_priority(path) -> bool:
+    def is_priority(path: list[HubNodes]) -> bool:
         """
         validates if all the choices on the path follow the
         priority rule
@@ -121,7 +122,7 @@ class Algo:
         return True
 
     @staticmethod
-    def is_restricted(path) -> bool:
+    def is_restricted(path: list[HubNodes]) -> bool:
         """
         validates if any choice is restricted
         think it can be deprecated
@@ -157,7 +158,12 @@ class Algo:
         # if hub is None:
         #     return
 
-        def find_path(node, start, end, visited=None):
+        def find_path(
+            node: Any,
+            start: Any,
+            end: Any,
+            visited: Any = None
+        ) -> Any:
             if visited is None:
                 visited = set()
 
@@ -508,7 +514,7 @@ class Algo:
 
         return drones
 
-    def reset_moving(self):
+    def reset_moving(self) -> None:
         """
         Resets the movement state of all drones for a new simulation turn.
 
@@ -544,12 +550,18 @@ class Algo:
             log.extend(self.walk_one(drones_after_conns))
 
         drones_conns = self.find_drones_c()
+        drones_conns = list(
+            filter(lambda x: x not in drones_after_conns, drones_conns)
+        )
         if len(drones_conns) != 0:
             self.walk_one(drones_conns, type='connection')
 
         drones_hubs = self.find_drones_h()
         drones_hubs = list(
             filter(lambda x: x not in drones_conns, drones_hubs)
+        )
+        drones_hubs = list(
+            filter(lambda x: x not in drones_after_conns, drones_hubs)
         )
         if len(drones_hubs) != 0:
             log.extend(self.walk_one(drones_hubs))

@@ -20,10 +20,13 @@ start: install
 	$(UV) run main.py
 
 run:
-	$(UV) run main.py
+	$(UV) run main.py $(filter-out $@,$(MAKECMDGOALS))
 
 debug:
 	$(UV) python3 -m pdb fly-in.py
+
+%:
+	@:
 
 clean:
 	@echo Cleaning environment ...
@@ -31,8 +34,6 @@ clean:
 
 clean-all: clean
 	@echo Cleaning environment ...
-	rm -rf solution
-	rm -rf maps
 	rm uv.lock
 
 lint:

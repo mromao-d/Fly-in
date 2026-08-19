@@ -4,7 +4,7 @@ from .algo import Algo
 import traceback
 
 
-def run(file: str):
+def run(file: str) -> None:
     try:
         confs = ReadConfs(file)
         Algo(confs)

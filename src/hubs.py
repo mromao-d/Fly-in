@@ -30,7 +30,7 @@ class HubNodes:
         hub_name: str,
         coord: tuple[int, int],
         max_drones: int,
-        confs: str,
+        confs: str | None,
         conn_nodes: list["HubNodes"] | None = None,
         zone: ZoneType = ZoneType.normal,
         level: int = -1
@@ -82,31 +82,32 @@ class HubNodes:
         extracts confs metadata
         ensures no more metada is available
         """
-        for conf in self.confs.split(' '):
-            if "color" in conf.lower():
-                self.color = conf.split('=')[1].lower()
-            elif (
-                "max_drones" in conf.lower()
-            ):
-                try:
-                    m_d = int(conf.split('=')[1])
-                    if self.hub_type.name not in ('start_hub', 'end_hub'):
-                        self.max_drones = m_d
-                except Exception:
-                    raise ConfsError(
-                        f"max_dones '{conf.split('=')[1]}' is not numeric"
-                    )
-                if m_d < 1:
-                    raise ConfsError(f"max_dones {m_d} is lower than 0")
-            elif "zone" in conf.lower():
-                try:
-                    self.zone = ZoneType[conf.split('=')[1].lower()]
-                except Exception:
-                    raise ConfsError(
-                        f"Zone {conf.split('=')[1].lower()} does not exist"
-                    )
-            else:
-                raise ConfsError(f"unkonw metadata {conf.lower()}")
+        if self.confs:
+            for conf in self.confs.split(' '):
+                if "color" in conf.lower():
+                    self.color = conf.split('=')[1].lower()
+                elif (
+                    "max_drones" in conf.lower()
+                ):
+                    try:
+                        m_d = int(conf.split('=')[1])
+                        if self.hub_type.name not in ('start_hub', 'end_hub'):
+                            self.max_drones = m_d
+                    except Exception:
+                        raise ConfsError(
+                            f"max_dones '{conf.split('=')[1]}' is not numeric"
+                        )
+                    if m_d < 1:
+                        raise ConfsError(f"max_dones {m_d} is lower than 0")
+                elif "zone" in conf.lower():
+                    try:
+                        self.zone = ZoneType[conf.split('=')[1].lower()]
+                    except Exception:
+                        raise ConfsError(
+                            f"Zone {conf.split('=')[1].lower()} does not exist"
+                        )
+                else:
+                    raise ConfsError(f"unkonw metadata {conf.lower()}")
         return None
 
     def map_drones(self) -> None:

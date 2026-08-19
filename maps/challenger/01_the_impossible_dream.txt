@@ -1,4 +1,4 @@
-# CHALLENGER LEVEL: THE IMPOSSIBLE DREAM
+# The goal is NOT to validate this map but to push algorithmic limits.
 nb_drones: 25
 
 # === LAYER 0: The Nightmare Begins ===

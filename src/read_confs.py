@@ -46,7 +46,7 @@ class ReadConfs:
         except FileNotFoundError:
             raise FileNotFoundError(f"File {self.file_path} not found")
 
-    def parse_txt(self):
+    def parse_txt(self) -> None:
         """
         reads the file and extracts the configs
         """
@@ -67,9 +67,8 @@ class ReadConfs:
             while (line):
                 try:
                     hub = HubType(line.split(":")[0])
-                    confs = re.search(r"\[(.*?)\]", line)
-                    if confs:
-                        confs = confs.group(1)
+                    match = re.search(r"\[(.*?)\]", line)
+                    confs = match.group(1) if match else None
                     name = line.split(" ")[1].strip('\n')
 
                     if hub == HubType.connection:
@@ -102,7 +101,7 @@ class ReadConfs:
                 finally:
                     line = fd.readline()
 
-    def normalize_coords(self):
+    def normalize_coords(self) -> None:
         """
         Normalization of hub coords for visualization purposes
         (I dont want them to be < 0)
@@ -117,7 +116,7 @@ class ReadConfs:
             x, y = hub.coord
             hub.coord = (x + dx, y + dy)
 
-    def map_coords(self):
+    def map_coords(self) -> None:
         """
         Gives the map dimensions, based on the coords of the hubs
         """
@@ -135,7 +134,7 @@ class ReadConfs:
             raise ValueError("Map dimensions must be greater than 0")
         self.grid_size = ((max_x - min_x), (max_y - min_y))
 
-    def map_hub_conns(self):
+    def map_hub_conns(self) -> None:
         """
         Maps the forward hubs for each hub
         """

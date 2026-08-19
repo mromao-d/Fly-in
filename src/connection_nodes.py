@@ -9,7 +9,7 @@ class ConnectionNodes:
     def __init__(
         self,
         path: str,
-        confs: str
+        confs: str | None
     ):
         """
         initiates the class
@@ -18,7 +18,7 @@ class ConnectionNodes:
             confs (str): metadata (if any)
         """
         self.path: str = path
-        self.confs: str = confs
+        self.confs: str | None = confs
         self.start: str = ""
         self.end: str = ""
         self.pass_drones = 0

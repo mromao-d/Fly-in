@@ -71,7 +71,7 @@ class RenderMap:
         color: tuple[int, int, int],
         start: tuple[float, float],
         end: tuple[float, float],
-        radius
+        radius: float
     ) -> None:
         """
         function to draw arrows between Hubs
